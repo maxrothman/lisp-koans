@@ -49,8 +49,61 @@
 ;;;
 ;;; Your goal is to write the scoring function for Greed.
 
+(defun find-remove-n (needle lst num)
+  ; Takes an item to find, a list to find it in, and a number of times to find it.
+  ; Returns whether the list contains the needle the specified number of times and the unmatched items
+  (labels ((inner (unsearched remaining-matches not-matching)
+      (cond
+        ((eq remaining-matches 0)            ;; found the needle the specified number of times
+          (values t (append not-matching unsearched)))
+        ((not unsearched)                    ;; hit the end of the list before the needle was found enough times
+          (values nil not-matching))
+        ((eql needle (first unsearched))     ;; the first element matches
+          (multiple-value-bind (found not-matching) (inner (rest unsearched) (- remaining-matches 1) not-matching)
+            (values found not-matching)))
+        (t                                   ;; the first element does not match
+          (multiple-value-bind (found not-matching) (inner (rest unsearched) remaining-matches not-matching)
+            (values found (cons (first unsearched) not-matching)))))))
+    (inner lst num '())))
+
+(define-test partition
+  (assert-equal '(nil ())      (multiple-value-list (find-remove-n 3 '() 1)))
+  (assert-equal '(t ())        (multiple-value-list (find-remove-n 1 '(1) 1)))
+  (assert-equal '(t (2 3))     (multiple-value-list (find-remove-n 1 '(1 2 3) 1)))
+  (assert-equal '(t (2 3 1))   (multiple-value-list (find-remove-n 1 '(1 2 1 3 1) 2)))
+  (assert-equal '(nil (1 2 3)) (multiple-value-list (find-remove-n 4 '(1 2 3) 1))))
+
+(defun first-matching-rule (rules dice)
+  (let* ((rule (first rules))
+         (cnt (first rule))
+         (num (second rule)))
+    (multiple-value-bind (found not-matching) (find-remove-n num dice cnt)
+      (cond (found (values rule not-matching))
+            ((not (rest rules)) nil)
+            (t (first-matching-rule (rest rules) dice))))))
+
+(define-test first-matching-rule
+  (assert-equal (multiple-value-list (first-matching-rule '((3 1 1000)) '())) '(nil))
+  (assert-equal (multiple-value-list (first-matching-rule '((3 1 1000)) '(1 1 1))) '((3 1 1000) nil))
+  (assert-equal (multiple-value-list (first-matching-rule '((3 1 1000) (1 1 10)) '(1 1 2))) '((1 1 10) (1 2)))
+)
+
+; e.g. 3 1s are worth 1000
+(defconstant score-rules
+  (list '(3 1 1000)
+        '(3 6 600)
+        '(3 5 500)
+        '(3 4 400)
+        '(3 3 300)
+        '(3 2 200)
+        '(1 1 100)
+        '(1 5 50)))
+
 (defun score (&rest dice)
-  ____)
+  (multiple-value-bind (rule unmatched) (first-matching-rule score-rules dice)
+    (cond ((not dice) 0)
+          ((not rule) 0)
+          (t (+ (third rule) (apply #'score unmatched))))))
 
 (define-test score-of-an-empty-list-is-zero
   (assert-equal 0 (score)))
