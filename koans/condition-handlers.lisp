@@ -90,7 +90,7 @@
                    (silly-condition #'handle-silly-condition)
                    (most-silly-condition #'handle-most-silly-condition))
       (signal (make-condition 'most-silly-condition)))
-    (assert-equal ____ *list*)))
+    (assert-equal '(:most-silly-condition :silly-condition :very-silly-condition) *list*)))
 
 (define-test handler-order
   ;; The order of binding handlers matters.
@@ -99,7 +99,7 @@
                    (very-silly-condition #'handle-very-silly-condition)
                    (most-silly-condition #'handle-most-silly-condition))
       (signal (make-condition 'most-silly-condition)))
-    (assert-equal ____ *list*)))
+    (assert-equal '(:most-silly-condition :very-silly-condition :silly-condition) *list*)))
 
 (define-test multiple-handler-binds
   ;; It is possible to bind handlers in steps.
@@ -108,7 +108,7 @@
                    (most-silly-condition #'handle-most-silly-condition))
       (handler-bind ((very-silly-condition #'handle-very-silly-condition))
         (signal (make-condition 'most-silly-condition))))
-    (assert-equal ____ *list*)))
+    (assert-equal '(:most-silly-condition :silly-condition :very-silly-condition) *list*)))
 
 (define-test same-handler
   ;; The same handler may be bound multiple times.
@@ -119,7 +119,7 @@
                      (silly-condition #'handle-silly-condition)
                      (very-silly-condition #'handle-very-silly-condition))
         (signal (make-condition 'most-silly-condition))))
-    (assert-equal ____ *list*)))
+    (assert-equal '(:silly-condition :silly-condition :very-silly-condition :silly-condition :very-silly-condition) *list*)))
 
 (define-test handler-types
   ;; A handler is not executed if it does not match the condition type.
@@ -128,7 +128,7 @@
                    (very-silly-condition #'handle-very-silly-condition)
                    (most-silly-condition #'handle-most-silly-condition))
       (signal (make-condition 'very-silly-condition)))
-    (assert-equal ____ *list*)))
+    (assert-equal '(:very-silly-condition :silly-condition) *list*)))
 
 (define-test handler-transfer-of-control
   ;; A handler may decline to handle the condition if it returns normally,
@@ -141,7 +141,7 @@
                                         (return-from my-block)))
                      (silly-condition #'handle-silly-condition))
         (signal (make-condition 'silly-condition))))
-    (assert-equal ____ *list*)))
+    (assert-equal '(:silly-condition) *list*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,7 +161,7 @@
     (handler-case (signal (make-condition 'my-error))
       (error (condition) (handle-error condition))
       (my-error (condition) (handle-my-error condition)))
-    (assert-equal ____ *list*)))
+    (assert-equal '(:error) *list*)))
 
 (define-test handler-case-order
   ;; The order of handler cases matters.
@@ -169,7 +169,7 @@
     (handler-case (signal (make-condition 'my-error))
       (my-error (condition) (handle-my-error condition))
       (error (condition) (handle-error condition)))
-    (assert-equal ____ *list*)))
+    (assert-equal '(:my-error) *list*)))
 
 (define-test handler-case-type
   ;; A handler cases is not executed if it does not match the condition type.
@@ -177,7 +177,7 @@
     (handler-case (signal (make-condition 'error))
       (my-error (condition) (handle-my-error condition))
       (error (condition) (handle-error condition)))
-    (assert-equal ____ *list*)))
+    (assert-equal '(:error) *list*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,9 +197,9 @@
            (handler-case (divide numerator denominator)
              (division-by-zero () :division-by-zero)
              (type-error () :type-error))))
-    (assert-equal ____ (try-to-divide 6 2))
-    (assert-equal ____ (try-to-divide 6 0))
-    (assert-equal ____ (try-to-divide 6 :zero))))
+    (assert-equal 3 (try-to-divide 6 2))
+    (assert-equal :division-by-zero (try-to-divide 6 0))
+    (assert-equal :type-error (try-to-divide 6 :zero))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,7 +217,7 @@
       ;; Disabled on ABCL due to a conformance bug.
       ;; See https://github.com/armedbear/abcl/issues/177
       #-abcl
-      (assert-equal ____ (funcall operation 12 4)))))
+      (assert-equal 3 (funcall operation 12 4)))))
 
 (define-test accessors-type-error
   (let ((condition (handler-case (divide 6 :zero) (type-error (c) c))))

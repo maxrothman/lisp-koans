@@ -24,9 +24,6 @@
  #:type-checking
  #:clos
  #:std-method-comb
- #:condition-handlers
- #:triangle-project
- #:dice-project
  #:backquote
  #:macros
  #+quicklisp #:threads
